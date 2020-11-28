@@ -2,178 +2,213 @@
  * webpack configuration
  */
 
-import * as fs from 'fs';
-import * as webpack from 'webpack';
-const TerserPlugin = require('terser-webpack-plugin');
-const { VueLoaderPlugin } = require('vue-loader');
+import * as fs from "fs";
+import * as webpack from "webpack";
+const TerserPlugin = require("terser-webpack-plugin");
+const { VueLoaderPlugin } = require("vue-loader");
 
 class WebpackOnBuildPlugin {
-	constructor(readonly callback: (stats: any) => void) {
-	}
+	constructor(readonly callback: (stats: any) => void) {}
 
 	public apply(compiler: any) {
-		compiler.hooks.done.tap('WebpackOnBuildPlugin', this.callback);
+		compiler.hooks.done.tap("WebpackOnBuildPlugin", this.callback);
 	}
 }
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === "production";
 
-const locales = require('./locales');
-const meta = require('./package.json');
+const locales = require("./locales");
+const meta = require("./package.json");
 
 const postcss = {
-	loader: 'postcss-loader',
+	loader: "postcss-loader",
 	options: {
 		postcssOptions: {
 			plugins: [
-				require('cssnano')({
-					preset: 'default'
-				})
-			]
-		}
+				require("cssnano")({
+					preset: "default",
+				}),
+			],
+		},
 	},
 };
 
 module.exports = {
 	entry: {
-		app: './src/client/init.ts',
-		sw: './src/client/sw.ts'
+		app: "./src/client/init.ts",
+		sw: "./src/client/sw.ts",
 	},
 	module: {
-		rules: [{
-			test: /\.vue$/,
-			exclude: /node_modules/,
-			use: [{
-				loader: 'vue-loader',
-				options: {
-					cssSourceMap: false,
-					compilerOptions: {
-						preserveWhitespace: false
-					}
-				}
-			}]
-		}, {
-			test: /\.scss?$/,
-			exclude: /node_modules/,
-			oneOf: [{
-				resourceQuery: /module/,
-				use: [{
-					loader: 'vue-style-loader'
-				}, {
-					loader: 'css-loader',
-					options: {
-						modules: true,
-						esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
-						url: false,
-					}
-				}, postcss, {
-					loader: 'sass-loader',
-					options: {
-						implementation: require('sass'),
-						sassOptions: {
-							fiber: require('fibers')
-						}
-					}
-				}]
-			}, {
-				use: [{
-					loader: 'vue-style-loader'
-				}, {
-					loader: 'css-loader',
-					options: {
-						url: false,
-						esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
-					}
-				}, postcss, {
-					loader: 'sass-loader',
-					options: {
-						implementation: require('sass'),
-						sassOptions: {
-							fiber: require('fibers')
-						}
-					}
-				}]
-			}]
-		}, {
-			test: /\.css$/,
-			use: [{
-				loader: 'vue-style-loader'
-			}, {
-				loader: 'css-loader',
-				options: {
-					esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
-				}
-			}, postcss]
-		}, {
-			test: /\.(eot|woff|woff2|svg|ttf)([?]?.*)$/,
-			loader: 'url-loader'
-		}, {
-			test: /\.json5$/,
-			loader: 'json5-loader',
-			options: {
-				esModule: false,
+		rules: [
+			{
+				test: /\.vue$/,
+				exclude: /node_modules/,
+				use: [
+					{
+						loader: "vue-loader",
+						options: {
+							cssSourceMap: false,
+							compilerOptions: {
+								preserveWhitespace: false,
+							},
+						},
+					},
+				],
 			},
-			type: 'javascript/auto'
-		}, {
-			test: /\.ts$/,
-			exclude: /node_modules/,
-			use: [{
-				loader: 'ts-loader',
+			{
+				test: /\.scss?$/,
+				exclude: /node_modules/,
+				oneOf: [
+					{
+						resourceQuery: /module/,
+						use: [
+							{
+								loader: "vue-style-loader",
+							},
+							{
+								loader: "css-loader",
+								options: {
+									modules: true,
+									esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
+									url: false,
+								},
+							},
+							postcss,
+							{
+								loader: "sass-loader",
+								options: {
+									implementation: require("sass"),
+									sassOptions: {
+										fiber: require("fibers"),
+									},
+								},
+							},
+						],
+					},
+					{
+						use: [
+							{
+								loader: "vue-style-loader",
+							},
+							{
+								loader: "css-loader",
+								options: {
+									url: false,
+									esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
+								},
+							},
+							postcss,
+							{
+								loader: "sass-loader",
+								options: {
+									implementation: require("sass"),
+									sassOptions: {
+										fiber: require("fibers"),
+									},
+								},
+							},
+						],
+					},
+				],
+			},
+			{
+				test: /\.css$/,
+				use: [
+					{
+						loader: "vue-style-loader",
+					},
+					{
+						loader: "css-loader",
+						options: {
+							esModule: false, // TODO: trueにすると壊れる。Vue3移行の折にはtrueにできるかもしれない
+						},
+					},
+					postcss,
+				],
+			},
+			{
+				test: /\.(eot|woff|woff2|svg|ttf)([?]?.*)$/,
+				loader: "url-loader",
+			},
+			{
+				test: /\.json5$/,
+				loader: "json5-loader",
 				options: {
-					happyPackMode: true,
-					transpileOnly: true,
-					configFile: __dirname + '/src/client/tsconfig.json',
-					appendTsSuffixTo: [/\.vue$/]
-				}
-			}]
-		}]
+					esModule: false,
+				},
+				type: "javascript/auto",
+			},
+			{
+				test: /\.ts$/,
+				exclude: /node_modules/,
+				use: [
+					{
+						loader: "ts-loader",
+						options: {
+							happyPackMode: true,
+							transpileOnly: true,
+							configFile: __dirname + "/src/client/tsconfig.json",
+							appendTsSuffixTo: [/\.vue$/],
+						},
+					},
+				],
+			},
+		],
 	},
 	plugins: [
 		new webpack.ProgressPlugin({}),
 		new webpack.DefinePlugin({
 			_VERSION_: JSON.stringify(meta.version),
-			_LANGS_: JSON.stringify(Object.entries(locales).map(([k, v]: [string, any]) => [k, v._lang_])),
+			_LANGS_: JSON.stringify(
+				Object.entries(locales).map(([k, v]: [string, any]) => [k, v._lang_])
+			),
 			_ENV_: JSON.stringify(process.env.NODE_ENV),
-			_DEV_: process.env.NODE_ENV !== 'production',
-			_PERF_PREFIX_: JSON.stringify('Misskey:'),
-			_DATA_TRANSFER_DRIVE_FILE_: JSON.stringify('mk_drive_file'),
-			_DATA_TRANSFER_DRIVE_FOLDER_: JSON.stringify('mk_drive_folder'),
-			_DATA_TRANSFER_DECK_COLUMN_: JSON.stringify('mk_deck_column'),
+			// _DEV_: process.env.NODE_ENV !== 'production',
+			// 何故かproductionに切り替わってくれないので暫定……
+			_DEV_: false,
+			_PERF_PREFIX_: JSON.stringify("Misskey:"),
+			_DATA_TRANSFER_DRIVE_FILE_: JSON.stringify("mk_drive_file"),
+			_DATA_TRANSFER_DRIVE_FOLDER_: JSON.stringify("mk_drive_folder"),
+			_DATA_TRANSFER_DECK_COLUMN_: JSON.stringify("mk_deck_column"),
 			__VUE_OPTIONS_API__: true,
 			__VUE_PROD_DEVTOOLS__: false,
 			__VUE_I18N_LEGACY_API__: false,
 		}),
 		new VueLoaderPlugin(),
 		new WebpackOnBuildPlugin((stats: any) => {
-			fs.writeFileSync('./built/meta.json', JSON.stringify({ version: meta.version }), 'utf-8');
+			fs.writeFileSync(
+				"./built/meta.json",
+				JSON.stringify({ version: meta.version }),
+				"utf-8"
+			);
 		}),
 	],
 	output: {
-		path: __dirname + '/built/client/assets',
+		path: __dirname + "/built/client/assets",
 		filename: `[name].${meta.version}.js`,
-		publicPath: '/assets/'
+		publicPath: "/assets/",
 	},
 	resolve: {
-		extensions: [
-			'.js', '.ts', '.json'
-		],
+		extensions: [".js", ".ts", ".json"],
 		alias: {
-			'@': __dirname + '/src/client',
-			'const.styl': __dirname + '/src/client/const.styl'
-		}
+			"@": __dirname + "/src/client",
+			"const.styl": __dirname + "/src/client/const.styl",
+		},
 	},
 	resolveLoader: {
-		modules: ['node_modules']
+		modules: ["node_modules"],
 	},
 	optimization: {
-		minimizer: [new TerserPlugin({
-			parallel: 1,
-		})],
+		minimizer: [
+			new TerserPlugin({
+				parallel: 1,
+			}),
+		],
 	},
 	cache: true,
 	experiments: {
-		topLevelAwait: true
+		topLevelAwait: true,
 	},
 	devtool: false, //'source-map',
-	mode: isProduction ? 'production' : 'development'
+	mode: isProduction ? "production" : "development",
 };
