@@ -165,14 +165,14 @@ module.exports = {
 	resolveLoader: {
 		modules: ['node_modules']
 	},
-	optimization: {
-		minimizer: [new TerserPlugin({
-			parallel: 1,
-		})],
-	},
 	cache: true,
 	experiments: {
 		topLevelAwait: true
+	},
+	optimization: {
+		minimizer: [new TerserPlugin({
+			parallel: 1
+		})]
 	},
 	devtool: false, //'source-map',
 	mode: isProduction ? 'production' : 'development'

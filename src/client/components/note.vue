@@ -1,6 +1,6 @@
 <template>
 <div
-	class="note _panelElevated"
+	class="note _panel"
 	v-if="!muted"
 	v-show="!isDeleted"
 	:tabindex="!isDeleted ? '-1' : null"
@@ -642,7 +642,7 @@ export default defineComponent({
 			if (this.preview) return;
 			pleaseLogin();
 
-			os.apiWithDialog('notes/reactions/' + (this.hasMyReaction ? 'delete' : 'create'), {
+			os.api('notes/reactions/' + (this.hasMyReaction ? 'delete' : 'create'), {
 				noteId: this.appearNote.id,
 			});
 		},

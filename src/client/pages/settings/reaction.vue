@@ -5,18 +5,24 @@
 	<div class="_formItem" v-if="emojiPickerShowPinnedEmojis">
 		<div class="_formLabel">{{ $t('reactionSettingDescription') }}</div>
 		<div class="_formPanel">
-			<XDraggable class="zoaiodol" :list="reactions" animation="150" delay="100" delay-on-touch-only="true">
-				<button class="_button item" v-for="reaction in reactions" :key="reaction" @click="remove(reaction, $event)">
-					<MkEmoji :emoji="reaction" :normal="true"/>
-				</button>
+			<XDraggable class="zoaiodol" v-model="reactions" :item-key="item => item" animation="150" delay="100" delay-on-touch-only="true">
+				<template #item="{element}">
+					<button class="_button item" @click="remove(element, $event)">
+						<MkEmoji :emoji="element" :normal="true"/>
+					</button>
+				</template>
 				<template #footer>
-					<button>a</button>
+					<button class="_button add" @click="chooseEmoji"><Fa :icon="faPlus"/></button>
 				</template>
 			</XDraggable>
 		</div>
-		<div class="_formCaption">{{ $t('reactionSettingDescription2') }} <button class="_textButton" @click="chooseEmoji">{{ $t('chooseEmoji') }}</button></div>
+		<div class="_formCaption" v-text="$t('reactionSettingDescription2')" />
+		<FormButton danger @click="setDefault"><Fa :icon="faUndo"/> {{ $t('default') }}</FormButton>
 	</div>
-	<FormSwitch v-model:value="emojiPickerShowRecentEmojis">{{ $t('emojiPickerShowRecentEmojis') }}</FormSwitch>
+	<FormGroup>
+		<FormSwitch v-model:value="emojiPickerShowRecentEmojis">{{ $t('emojiPickerShowRecentEmojis') }}</FormSwitch>
+		<FormButton v-if="emojiPickerShowRecentEmojis" @click="clearRecent" danger><Fa :icon="faTrashAlt"/> {{ $t('clearHistories') }}</FormButton>
+	</FormGroup>
 	<FormRadios v-model="reactionPickerWidth">
 		<template #desc>{{ $t('width') }}</template>
 		<option :value="1">{{ $t('small') }}</option>
@@ -30,17 +36,17 @@
 		<option :value="3">{{ $t('large') }}</option>
 	</FormRadios>
 	<FormButton @click="preview"><Fa :icon="faEye"/> {{ $t('preview') }}</FormButton>
-	<FormButton danger @click="setDefault"><Fa :icon="faUndo"/> {{ $t('default') }}</FormButton>
 </FormBase>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { faSave, faEye, faLaugh } from '@fortawesome/free-regular-svg-icons';
-import { faUndo } from '@fortawesome/free-solid-svg-icons';
-import { VueDraggableNext } from 'vue-draggable-next';
+import { faLaugh, faSave, faEye } from '@fortawesome/free-regular-svg-icons';
+import { faUndo, faPlus } from '@fortawesome/free-solid-svg-icons';
+import XDraggable from 'vuedraggable';
 import FormInput from '@/components/form/input.vue';
 import FormSwitch from '@/components/form/switch.vue';
+import FormGroup from '@/components/form/group.vue';
 import FormRadios from '@/components/form/radios.vue';
 import FormBase from '@/components/form/base.vue';
 import FormButton from '@/components/form/button.vue';
@@ -54,14 +60,14 @@ export default defineComponent({
 		FormBase,
 		FormRadios,
 		FormSwitch,
-		XDraggable: VueDraggableNext,
+		FormGroup,
+		XDraggable,
 	},
 
 	data() {
 		return {
 			reactions: JSON.parse(JSON.stringify(this.$store.state.settings.reactions)),
-			changed: false,
-			faLaugh, faSave, faEye, faUndo
+			faLaugh, faSave, faEye, faUndo, faPlus
 		}
 	},
 
@@ -133,6 +139,17 @@ export default defineComponent({
 			this.reactions = JSON.parse(JSON.stringify(defaultSettings.reactions));
 		},
 
+		async clearRecent() {
+			const { canceled } = await os.dialog({
+				type: 'warning',
+				text: this.$t('resetAreYouSure'),
+				showCancelButton: true
+			});
+			if (canceled) return;
+
+			this.$store.commit('device/set', { key: 'recentlyUsedEmojis', value: [] });
+		},
+
 		chooseEmoji(ev) {
 			os.pickEmoji(ev.currentTarget || ev.target, {
 				showPinned: false
@@ -154,6 +171,11 @@ export default defineComponent({
 		display: inline-block;
 		padding: 8px;
 		cursor: move;
+	}
+
+	> .add {
+		display: inline-block;
+		padding: 8px;
 	}
 }
 </style>
