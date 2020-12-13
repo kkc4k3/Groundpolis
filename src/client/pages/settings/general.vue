@@ -29,6 +29,7 @@
 		<FormSwitch v-model:value="disableAnimatedMfm">{{ $t('disableAnimatedMfm') }}</FormSwitch>
 		<FormSwitch v-model:value="reduceAnimation">{{ $t('reduceUiAnimation') }}</FormSwitch>
 		<FormSwitch v-model:value="useBlurEffectForModal">{{ $t('useBlurEffectForModal') }}</FormSwitch>
+		<FormSwitch v-model:value="showGapBetweenNotesInTimeline">{{ $t('showGapBetweenNotesInTimeline') }}</FormSwitch>
 		<FormSwitch v-model:value="loadRawImages">{{ $t('loadRawImages') }}</FormSwitch>
 		<FormSwitch v-model:value="disableShowingAnimatedImages">{{ $t('disableShowingAnimatedImages') }}</FormSwitch>
 		<FormSwitch v-model:value="useSystemFont">{{ $t('useSystemFont') }}</FormSwitch>
@@ -36,14 +37,14 @@
 			<div><Mfm text="🍮🍦🍭🍩🍰🍫🍬🥞🍪"/></div>
 		</FormSwitch>
 		<FormSwitch v-model:value="collapseLongNote">{{ $t('collapseLongNote') }}</FormSwitch>
-		<FormSwitch v-model:value="useDisplayNameForSidebar">{{ $t('useDisplayNameForSidebar') }}</FormSwitch>
 		<FormSwitch v-model:value="useSticker">{{ $t('useSticker') }}
-			<div>{{$t('useStickerDesc')}}</div>
-		</FormSwitch>
-		<FormSwitch v-model:value="showFullAcct">{{ $t('showFullAcct') }}
-			<div><MkAcct :user="$store.state.i"/></div>
+			<template #desc>{{$t('useStickerDesc')}}</template>
 		</FormSwitch>
 	</FormGroup>
+
+	<FormSwitch v-model:value="showFullAcct">{{ $t('showFullAcct') }}
+		<template #desc><MkAcct :user="$store.state.i"/></template>
+	</FormSwitch>
 
 	<FormSwitch v-model:value="makeCustomEmojisBigger">
 		{{ $t('makeCustomEmojisBigger') }}
@@ -175,6 +176,11 @@ export default defineComponent({
 		useBlurEffectForModal: {
 			get() { return this.$store.state.device.useBlurEffectForModal; },
 			set(value) { this.$store.commit('device/set', { key: 'useBlurEffectForModal', value: value }); }
+		},
+
+		showGapBetweenNotesInTimeline: {
+			get() { return this.$store.state.device.showGapBetweenNotesInTimeline; },
+			set(value) { this.$store.commit('device/set', { key: 'showGapBetweenNotesInTimeline', value: value }); }
 		},
 
 		disableAnimatedMfm: {

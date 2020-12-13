@@ -51,7 +51,7 @@ if (_DEV_) {
 document.addEventListener('touchend', () => {}, { passive: true });
 
 if (localStorage.getItem('theme') == null) {
-	applyTheme(require('@/themes/d-groundpolis.json5'));
+	applyTheme(require('@/themes/d-dark.json5'));
 }
 
 //#region SEE: https://css-tricks.com/the-trick-to-viewport-units-on-mobile/
@@ -66,6 +66,15 @@ window.addEventListener('resize', () => {
 
 // Get the <head> element
 const head = document.getElementsByTagName('head')[0];
+
+const css = localStorage['css'];
+
+if (css) { 
+	const style = document.createElement('style');
+	style.innerText = css;
+
+	head.appendChild(style);
+}
 
 // If mobile, insert the viewport meta tag
 if (os.isMobile || window.innerWidth <= 1024) {

@@ -52,7 +52,7 @@
 			<div class="body">
 				<p v-if="appearNote.cw != null" class="cw">
 					<Mfm v-if="appearNote.cw != '' && !isPlainMode" class="text" :text="appearNote.cw" :author="appearNote.user" :i="$store.state.i" :custom-emojis="appearNote.emojis" :no-sticker="true"/>
-					<span v-else-if="appearNote.cw != ''" class="text" v-text="appearNote.cw"/>
+					<MkPlainText v-else-if="appearNote.cw != ''" class="text" :text="appearNote.cw"/>
 					<XCwButton v-model:value="showContent" :note="appearNote"/>
 				</p>
 				<div class="content" v-show="appearNote.cw == null || showContent">
@@ -60,7 +60,7 @@
 						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ $t('private') }})</span>
 						<MkA class="reply" v-if="appearNote.replyId" :to="`/notes/${appearNote.replyId}`"><Fa :icon="faReply"/></MkA>
 						<Mfm v-if="appearNote.text && !isPlainMode" :text="appearNote.text" :author="appearNote.user" :i="$store.state.i" :custom-emojis="appearNote.emojis"/>
-						<span v-else-if="appearNote.text" v-text="appearNote.text"/>
+						<MkPlainText v-else-if="appearNote.text" :text="appearNote.text"/>
 					</div>
 					<button v-if="readMore !== null" class="read-more-button _button _link" @click="readMore = !readMore" v-text="$t(readMore ? 'hide' : 'readMore')"/>
 					<div class="files" v-if="appearNote.files.length > 0">
@@ -614,8 +614,25 @@ export default defineComponent({
 
 		renoteDirectly() {
 			if (this.preview) return;
-			os.api('notes/create', {
+			os.apiWithDialog('notes/create', {
 				renoteId: this.appearNote.id
+			}, undefined, (res: any) => {
+				os.dialog({
+					type: 'success',
+					text: this.$t('renoted'),
+				});
+			}, (e: Error) => {
+				if (e.id === 'b5c90186-4ab0-49c8-9bba-a1f76c282ba4') {
+					os.dialog({
+						type: 'error',
+						text: this.$t('cantRenote'),
+					});
+				} else if (e.id === 'fd4cc33e-2a37-48dd-99cc-9b806eb2031a') {
+					os.dialog({
+						type: 'error',
+						text: this.$t('cantReRenote'),
+					});
+				}
 			});
 		},
 
@@ -668,6 +685,23 @@ export default defineComponent({
 			pleaseLogin();
 			os.apiWithDialog('notes/favorites/create', {
 				noteId: this.appearNote.id
+			}, undefined, (res: any) => {
+				os.dialog({
+					type: 'success',
+					text: this.$t('favorited'),
+				});
+			}, (e: Error) => {
+				if (e.id === 'a402c12b-34dd-41d2-97d8-4d2ffd96a1a6') {
+					os.dialog({
+						type: 'error',
+						text: this.$t('alreadyFavorited'),
+					});
+				} else if (e.id === '6dd26674-e060-4816-909a-45ba3f4da458') {
+					os.dialog({
+						type: 'error',
+						text: this.$t('cantFavorite'),
+					});
+				}
 			});
 		},
 
@@ -1269,6 +1303,10 @@ export default defineComponent({
 
 				&.misskey {
 					@include ticker(rgb(134, 179, 0), rgb(242, 242, 242));
+				}
+
+				&.groundpolis {
+					@include ticker(#251a10, rgb(110, 229, 0));
 				}
 
 				&.mastodon {

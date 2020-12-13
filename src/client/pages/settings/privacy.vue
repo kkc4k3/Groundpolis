@@ -15,6 +15,10 @@
 			<template #desc>{{ $t('noCrawleDescription') }}</template>
 		</FormSwitch>
 	</FormGroup>
+	<FormSwitch v-model:value="isExplorable" @update:value="save()">
+		{{ $t('makeExplorable') }}
+		<template #desc>{{ $t('makeExplorableDescription') }}</template>
+	</FormSwitch>
 	<FormSwitch v-model:value="rememberNoteVisibility" @update:value="save()">{{ $t('rememberNoteVisibility') }}</FormSwitch>
 	<FormGroup v-if="!rememberNoteVisibility">
 		<template #label>{{ $t('defaultNoteVisibility') }}</template>
@@ -54,6 +58,7 @@ export default defineComponent({
 			autoAcceptFollowed: false,
 			hideFF: false,
 			noCrawle: false,
+			isExplorable: false,
 		}
 	},
 
@@ -80,6 +85,7 @@ export default defineComponent({
 		this.carefulBot = this.$store.state.i.carefulBot;
 		this.autoAcceptFollowed = this.$store.state.i.autoAcceptFollowed;
 		this.noCrawle = this.$store.state.i.noCrawle;
+		this.isExplorable = this.$store.state.i.isExplorable;
 	},
 
 	mounted() {
@@ -94,6 +100,7 @@ export default defineComponent({
 				carefulBot: !!this.carefulBot,
 				autoAcceptFollowed: !!this.autoAcceptFollowed,
 				noCrawle: !!this.noCrawle,
+				isExplorable: !!this.isExplorable,
 			});
 		}
 	}
