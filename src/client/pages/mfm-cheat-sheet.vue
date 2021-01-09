@@ -2,7 +2,7 @@
 <div class="mwysmxbg">
 	<div class="_section">
 		<div class="_content">
-			<p>{{ $t('_mfm.intro') }}</p>
+			<p>{{ $ts._mfm.intro }}</p>
 		</div>
 	</div>
 	<XSection v-for="s in sections" :key="s[0]"
@@ -25,7 +25,7 @@ export default defineComponent({
 	data() {
 		return {
 			INFO: {
-				title: this.$t('_mfm.cheatSheet'),
+				title: this.$ts._mfm.cheatSheet,
 				icon: faQuestionCircle,
 			},
 			sections: markRaw([
@@ -33,8 +33,8 @@ export default defineComponent({
 				[ 'hashtag', '#test' ],
 				[ 'url', `https://example.com` ],
 				[ 'link', `[${this.$t('_mfm.dummy')}](https://example.com)` ],
-				[ 'emoji', `:${this.$store.state.instance.meta.emojis[0].name}:` ],
-				[ 'userEmoji', `:@${this.$store.state.i.username}:` ],
+				[ 'emoji', `:${this.$instance.emojis[0].name}:` ],
+				[ 'userEmoji', `:@${this.$i.username}:` ],
 				[ 'bold', `**${this.$t('_mfm.dummy')}**` ],
 				[ 'small', `<small>${this.$t('_mfm.dummy')}</small>` ],
 				[ 'center', `<center>${this.$t('_mfm.dummy')}</center>` ],
@@ -47,6 +47,11 @@ export default defineComponent({
 				[ 'blockMath', '\\[x= \\frac{-b\' \\pm \\sqrt{(b\')^2-ac}}{a}\\]' ],
 				[ 'quote', `> ${this.$t('_mfm.dummy')}` ],
 				[ 'search', `${this.$t('_mfm.dummy')} 検索` ],
+				[ 'x1', `[x1 🍮]` ],
+				[ 'x2', `[x2 🍮]` ],
+				[ 'x3', `[x3 🍮]` ],
+				[ 'x4', `[x4 🍮]` ],
+				[ 'blur', `[blur ${this.$t('_mfm.dummy')}]` ],
 				[ 'jelly', `[jelly 🍮]` ],
 				[ 'tada', `[tada 🍮]` ],
 				[ 'wobble', `[wobble 🍮]` ],

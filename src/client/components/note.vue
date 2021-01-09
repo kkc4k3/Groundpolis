@@ -8,20 +8,20 @@
 	v-hotkey="keymap"
 	v-size="{ max: [500, 450, 350, 300] }"
 >
-	<XSub v-for="note in conversation" class="reply-to-more" :key="note.id" :note="note"/>
 	<XSub :note="appearNote.reply" class="reply-to" v-if="appearNote.reply"/>
-	<div class="info" v-if="pinned"><Fa :icon="faThumbtack"/> {{ $t('pinnedNote') }}</div>
-	<div class="info" v-if="appearNote._prId_"><Fa :icon="faBullhorn"/> {{ $t('promotion') }}<button class="_textButton hide" @click="readPromo()">{{ $t('hideThisNote') }} <Fa :icon="faTimes"/></button></div>
-	<div class="info" v-if="appearNote._featuredId_"><Fa :icon="faBolt"/> {{ $t('featured') }}</div>
+	<div class="info" v-if="pinned"><Fa :icon="faThumbtack"/> {{ $ts.pinnedNote }}</div>
+	<div class="info" v-if="appearNote._prId_"><Fa :icon="faBullhorn"/> {{ $ts.promotion }}<button class="_textButton hide" @click="readPromo()">{{ $ts.hideThisNote }} <Fa :icon="faTimes"/></button></div>
+	<div class="info" v-if="appearNote._featuredId_"><Fa :icon="faBolt"/> {{ $ts.featured }}</div>
 	<div class="renote" v-if="isRenote">
 		<MkAvatar class="avatar" :user="note.user"/>
 		<Fa :icon="faRetweet"/>
-		<MkA class="name" :to="userPage(note.user)" v-user-preview="note.userId">
-			<i18n-t keypath="renotedBy" tag="span">
-				<template #user><MkUserName :user="note.user"/></template>
-			</i18n-t>
-		</MkA>
-
+		<I18n :src="$ts.renotedBy" tag="span">
+			<template #user>
+				<MkA class="name" :to="userPage(note.user)" v-user-preview="note.userId">
+					<MkUserName :user="note.user"/>
+				</MkA>
+			</template>
+		</I18n>
 		<div class="info">
 			<button class="_button time" @click="showRenoteMenu()" ref="renoteTime">
 				<Fa class="dropdownIcon" v-if="isMyRenote" :icon="faEllipsisV"/>
@@ -37,11 +37,11 @@
 			<span class="localOnly" v-if="note.remoteFollowersOnly"><Fa :icon="faHeartbeat"/></span>
 		</div>
 	</div>
-	<article class="article" @contextmenu="onContextmenu">
+	<article class="article" @contextmenu.stop="onContextmenu">
 		<MkAvatar class="avatar" :user="appearNote.user"/>
 		<div class="main">
 			<XNoteHeader class="header" :note="appearNote" :mini="true" :detail="detail"/>
-			<div v-if="showTicker && !appearNote.user.host" class="instance-ticker misskey">
+			<div v-if="showTicker && !appearNote.user.host" class="instance-ticker groundpolis">
 				<img src="/favicon.ico" alt="favicon" class="favicon"/>
 				<span v-text="meta.name && meta.name !== host ? `${meta.name} (${host})` : host"/>
 			</div>
@@ -51,50 +51,37 @@
 			</div>
 			<div class="body">
 				<p v-if="appearNote.cw != null" class="cw">
-					<Mfm v-if="appearNote.cw != '' && !isPlainMode" class="text" :text="appearNote.cw" :author="appearNote.user" :i="$store.state.i" :custom-emojis="appearNote.emojis" :no-sticker="true"/>
+					<Mfm v-if="appearNote.cw != '' && !isPlainMode" class="text" :text="appearNote.cw" :author="appearNote.user" :i="$i" :custom-emojis="appearNote.emojis" :no-sticker="true"/>
 					<MkPlainText v-else-if="appearNote.cw != ''" class="text" :text="appearNote.cw"/>
 					<XCwButton v-model:value="showContent" :note="appearNote"/>
 				</p>
 				<div class="content" v-show="appearNote.cw == null || showContent">
-					<div class="text" ref="text" :class="{ collapse: readMore === false }">
-						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ $t('private') }})</span>
+					<div class="text" ref="text" :class="{ collapse: readMore === false }" :style="readMore === false ? `height: ${$store.state.noteCollapseThreshold}px` : null">
+						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ $ts.private }})</span>
 						<MkA class="reply" v-if="appearNote.replyId" :to="`/notes/${appearNote.replyId}`"><Fa :icon="faReply"/></MkA>
-						<Mfm v-if="appearNote.text && !isPlainMode" :text="appearNote.text" :author="appearNote.user" :i="$store.state.i" :custom-emojis="appearNote.emojis"/>
+						<Mfm v-if="appearNote.text && !isPlainMode" :text="appearNote.text" :author="appearNote.user" :i="$i" :custom-emojis="appearNote.emojis"/>
 						<MkPlainText v-else-if="appearNote.text" :text="appearNote.text"/>
 					</div>
-					<button v-if="readMore !== null" class="read-more-button _button _link" @click="readMore = !readMore" v-text="$t(readMore ? 'hide' : 'readMore')"/>
+					<button v-if="readMore !== null" class="read-more-button _button _link" @click="readMore = !readMore" v-text="readMore ? $ts.hide : $ts.readMore"/>
 					<div class="files" v-if="appearNote.files.length > 0">
 						<XMediaList :media-list="appearNote.files"/>
 					</div>
 					<XPoll v-if="appearNote.poll" :note="appearNote" ref="pollViewer" class="poll"/>
-					<MkUrlPreview v-for="url in urls" :url="url" :key="url" :compact="true" :detail="detail" class="url-preview"/>
+					<MkUrlPreview v-for="url in urls" :url="url" :key="url" :compact="true" :detail="false" class="url-preview"/>
 					<div class="renote" v-if="appearNote.renote"><XNotePreview :note="appearNote.renote"/></div>
 				</div>
 				<MkA v-if="appearNote.channel && !inChannel" class="channel" :to="`/channels/${appearNote.channel.id}`"><Fa :icon="faSatelliteDish"/> {{ appearNote.channel.name }}</MkA>
-				<div class="info" v-if="detail">
-					<div class="time">
-						<Fa :icon="faClock" fixed-width />
-						<MkTime :time="note.createdAt" mode="detail"/>
-					</div>
-					<div class="renotes" v-if="renoteState">
-						<MkA :to="`/notes/${appearNote.id}/renotes`">
-							<i18n-t :keypath="renoteState.isQuoted && renoteState.isRenoted ? 'renoteQuoteCount' : renoteState.isQuoted ? 'quoteCount' : 'renoteCount'" tag="span">
-								<template #count><strong v-text="appearNote.renoteCount" /></template>
-							</i18n-t>
-						</MkA>
-					</div>
-				</div>
 			</div>
 			<footer class="footer">
 				<XReactionsViewer v-if="!disableReactions" :note="appearNote" ref="reactionsViewer"/>
-				<template v-if="$store.getters.isSignedIn">
+				<template v-if="$i">
 					<button @click="reply()" class="button _button">
 						<template v-if="appearNote.reply"><Fa :icon="faReplyAll"/></template>
 						<template v-else><Fa :icon="faReply"/></template>
 						<p class="count" v-if="appearNote.repliesCount > 0">{{ appearNote.repliesCount }}</p>
 					</button>
 					<button v-if="canRenote" @click="renote()" class="button _button" ref="renoteButton">
-						<Fa :icon="faRetweet"/><p class="count" v-if="!detail && appearNote.renoteCount > 0">{{ appearNote.renoteCount }}</p>
+						<Fa :icon="faRetweet"/><p class="count" v-if="appearNote.renoteCount > 0">{{ appearNote.renoteCount }}</p>
 					</button>
 					<button v-else class="button _button">
 						<Fa :icon="faBan"/>
@@ -129,16 +116,15 @@
 			</footer>
 		</div>
 	</article>
-	<XSub v-for="note in replies" :key="note.id" :note="note" class="reply" :detail="true"/>
 </div>
 <div v-else class="_panel muted" @click="muted = false">
-	<i18n-t keypath="userSaysSomething" tag="small">
+	<I18n :src="$ts.userSaysSomething" tag="small">
 		<template #name>
 			<MkA class="name" :to="userPage(appearNote.user)" v-user-preview="appearNote.userId">
 				<MkUserName :user="appearNote.user"/>
 			</MkA>
 		</template>
-	</i18n-t>
+	</I18n>
 </div>
 </template>
 
@@ -202,11 +188,6 @@ export default defineComponent({
 			type: Object,
 			required: true
 		},
-		detail: {
-			type: Boolean,
-			required: false,
-			default: false
-		},
 		pinned: {
 			type: Boolean,
 			required: false,
@@ -224,7 +205,6 @@ export default defineComponent({
 	data() {
 		return {
 			connection: null,
-			conversation: [],
 			replies: [],
 			showContent: false,
 			isDeleted: false,
@@ -240,10 +220,10 @@ export default defineComponent({
 
 	computed: {
 		disableReactions() {
-			return this.$store.state.settings.disableReactions;
+			return this.$store.state.disableReactions;
 		},
 		rs(): string[] {
-			return this.$store.state.settings.reactions;
+			return this.$store.state.reactions;
 		},
 		keymap(): any {
 			return this.preview ? {} : {
@@ -279,7 +259,7 @@ export default defineComponent({
 		},
 
 		isCompactMode(): boolean {
-			return this.$store.state.device.postStyle === 'compact';
+			return this.$store.state.postStyle === 'compact';
 		},
 
 		hasMyReaction() {
@@ -296,7 +276,7 @@ export default defineComponent({
 		},
 
 		isMyNote(): boolean {
-			return this.$store.getters.isSignedIn && (this.$store.state.i.id === this.appearNote.userId);
+			return this.$i && (this.$i.id === this.appearNote.userId);
 		},
 
 		isPreviewOrDeleted(): boolean {
@@ -304,7 +284,7 @@ export default defineComponent({
 		},
 
 		isMyRenote(): boolean {
-			return this.$store.getters.isSignedIn && (this.$store.state.i.id === this.note.userId);
+			return this.$i && (this.$i.id === this.note.userId);
 		},
 
 		canRenote(): boolean {
@@ -340,19 +320,21 @@ export default defineComponent({
 		},
 
 		showTicker() {
-			const mode = this.$store.state.device.instanceTicker;
+			const mode = this.$store.state.instanceTicker;
 			return mode === 'always' || (mode === 'remote' && this.appearNote.user.host);
 		},
 
 		meta() {
-			return this.$store.state.instance.meta;
+			return this.$instance;
 		},
 	},
 
 	async created() {
-		if (this.$store.getters.isSignedIn) {
+		if (this.$i) {
 			this.connection = os.stream;
 		}
+
+		this.muted = await checkWordMute(this.appearNote, this.$i, this.$store.state.mutedWords);
 
 		// plugin
 		if (noteViewInterruptors.length > 0) {
@@ -363,56 +345,31 @@ export default defineComponent({
 			this.$emit('update:note', Object.freeze(result));
 		}
 
-		this.muted = await checkWordMute(this.appearNote, this.$store.state.i, this.$store.state.settings.mutedWords);
-
-		if (this.detail) {
-			if (this.appearNote.renoteCount > 0) {
-				this.renoteState = await os.api('notes/is-renoted', {
-					noteId: this.appearNote.id,
-				});
+		const textElement = this.$refs.text as HTMLElement | null;
+		if (textElement) {
+			const h = textElement.getBoundingClientRect().height;
+			if (h > this.$store.state.noteCollapseThreshold) {
+				this.readMore = false;
 			}
-			
-			os.api('notes/children', {
-				noteId: this.appearNote.id,
-				limit: 30
-			}).then(replies => {
-				this.replies = replies;
-			});
-
-			if (this.appearNote.replyId) {
-				os.api('notes/conversation', {
-					noteId: this.appearNote.replyId
-				}).then(conversation => {
-					this.conversation = conversation.reverse();
-				});
-			}
-		} else if (this.$store.state.device.collapseLongNote) {
-			const textElement = this.$refs.text as HTMLElement | null;
-			if (textElement) {
-				const h = textElement.getBoundingClientRect().height;
-				if (h > 192) {
-					this.readMore = false;
-				}
-			}
-			
 		}
 	},
 
 	async mounted() {
 		this.capture(true);
 
-		if (this.$store.getters.isSignedIn) {
+		if (this.$i) {
 			this.connection.on('_connected_', this.onStreamConnected);
 		}
 
-		if (this.showTicker)
+		if (this.showTicker) {
 			this.instance = await os.getInstance(this.appearNote.user.host);
+		}
 	},
 
 	beforeUnmount() {
 		this.decapture(true);
 
-		if (this.$store.getters.isSignedIn) {
+		if (this.$i) {
 			this.connection.off('_connected_', this.onStreamConnected);
 		}
 	},
@@ -439,14 +396,14 @@ export default defineComponent({
 		},
 
 		capture(withHandler = false) {
-			if (this.$store.getters.isSignedIn) {
+			if (this.$i) {
 				this.connection.send(document.body.contains(this.$el) ? 'sn' : 's', { id: this.appearNote.id });
 				if (withHandler) this.connection.on('noteUpdated', this.onStreamNoteUpdated);
 			}
 		},
 
 		decapture(withHandler = false) {
-			if (this.$store.getters.isSignedIn) {
+			if (this.$i) {
 				this.connection.send('un', {
 					id: this.appearNote.id
 				});
@@ -488,7 +445,7 @@ export default defineComponent({
 						[reaction]: currentCount + 1
 					};
 
-					if (body.userId === this.$store.state.i.id) {
+					if (body.userId === this.$i.id) {
 						n.myReaction = reaction;
 					}
 
@@ -513,7 +470,7 @@ export default defineComponent({
 						[reaction]: Math.max(0, currentCount - 1)
 					};
 
-					if (body.userId === this.$store.state.i.id) {
+					if (body.userId === this.$i.id) {
 						n.myReaction = null;
 					}
 
@@ -533,7 +490,7 @@ export default defineComponent({
 					choices[choice] = {
 						...choices[choice],
 						votes: choices[choice].votes + 1,
-						...(body.userId === this.$store.state.i.id ? {
+						...(body.userId === this.$i.id ? {
 							isVoted: true
 						} : {})
 					};
@@ -568,9 +525,9 @@ export default defineComponent({
 
 		renote(viaKeyboard = false) {
 			const renote = async () => {
-				const canceled = this.$store.state.device.showRenoteConfirm && (await os.dialog({
+				const canceled = this.$store.state.showRenoteConfirm && (await os.dialog({
 					type: 'question',
-					text: this.$t('renoteConfirm'),
+					text: this.$ts.renoteConfirm,
 					showCancelButton: true
 				})).canceled;
 				if (canceled) return;
@@ -588,11 +545,11 @@ export default defineComponent({
 
 			const choose = () => {
 				os.modalMenu([{
-					text: this.$t('renote'),
+					text: this.$ts.renote,
 					icon: faRetweet,
 					action: renote,
 				}, {
-					text: this.$t('quote'),
+					text: this.$ts.quote,
 					icon: faQuoteRight,
 					action: quote,
 				}], this.$refs.renoteButton, {
@@ -603,7 +560,7 @@ export default defineComponent({
 			if (this.preview) return;
 			pleaseLogin();
 			this.blur();
-			switch (this.$store.state.settings.renoteButtonMode) {
+			switch (this.$store.state.renoteButtonMode) {
 				case 'choose': choose(); break;
 				case 'renote': renote(); break;
 				case 'quote': quote(); break;
@@ -619,18 +576,18 @@ export default defineComponent({
 			}, undefined, (res: any) => {
 				os.dialog({
 					type: 'success',
-					text: this.$t('renoted'),
+					text: this.$ts.renoted,
 				});
 			}, (e: Error) => {
 				if (e.id === 'b5c90186-4ab0-49c8-9bba-a1f76c282ba4') {
 					os.dialog({
 						type: 'error',
-						text: this.$t('cantRenote'),
+						text: this.$ts.cantRenote,
 					});
 				} else if (e.id === 'fd4cc33e-2a37-48dd-99cc-9b806eb2031a') {
 					os.dialog({
 						type: 'error',
-						text: this.$t('cantReRenote'),
+						text: this.$ts.cantReRenote,
 					});
 				}
 			});
@@ -688,27 +645,27 @@ export default defineComponent({
 			}, undefined, (res: any) => {
 				os.dialog({
 					type: 'success',
-					text: this.$t('favorited'),
+					text: this.$ts.favorited,
 				});
 			}, (e: Error) => {
 				if (e.id === 'a402c12b-34dd-41d2-97d8-4d2ffd96a1a6') {
 					os.dialog({
 						type: 'error',
-						text: this.$t('alreadyFavorited'),
+						text: this.$ts.alreadyFavorited,
 					});
 				} else if (e.id === '6dd26674-e060-4816-909a-45ba3f4da458') {
 					os.dialog({
 						type: 'error',
-						text: this.$t('cantFavorite'),
+						text: this.$ts.cantFavorite,
 					});
 				}
 			});
 		},
 
 		async del() {
-			const canceled = this.$store.state.device.showNoteDeleteConfirm && (await os.dialog({
+			const canceled = this.$store.state.showNoteDeleteConfirm && (await os.dialog({
 				type: 'warning',
-				text: this.$t('noteDeleteConfirm'),
+				text: this.$ts.noteDeleteConfirm,
 				showCancelButton: true
 			})).canceled;
 			if (canceled) return;
@@ -718,9 +675,9 @@ export default defineComponent({
 		},
 
 		async delEdit() {
-			const canceled = this.$store.state.device.showDeleteAndEditConfirm && (await os.dialog({
+			const canceled = this.$store.state.showDeleteAndEditConfirm && (await os.dialog({
 				type: 'warning',
-				text: this.$t('deleteAndEditConfirm'),
+				text: this.$ts.deleteAndEditConfirm,
 				showCancelButton: true
 			})).canceled;
 
@@ -746,22 +703,22 @@ export default defineComponent({
 
 		getMenu() {
 			let menu;
-			if (this.$store.getters.isSignedIn) {
+			if (this.$i) {
 				const statePromise = os.api('notes/state', {
 					noteId: this.appearNote.id
 				});
 
 				menu = [{
 					icon: faCopy,
-					text: this.$t('copyContent'),
+					text: this.$ts.copyContent,
 					action: this.copyContent
 				}, {
 					icon: faLink,
-					text: this.$t('copyLink'),
+					text: this.$ts.copyLink,
 					action: this.copyLink
 				}, (this.appearNote.url || this.appearNote.uri) ? {
 					icon: faExternalLinkSquareAlt,
-					text: this.$t('showOnRemote'),
+					text: this.$ts.showOnRemote,
 					action: () => {
 						window.open(this.appearNote.url || this.appearNote.uri, '_blank');
 					}
@@ -769,41 +726,41 @@ export default defineComponent({
 				null,
 				statePromise.then(state => state.isFavorited ? {
 					icon: faStar,
-					text: this.$t('unfavorite'),
+					text: this.$ts.unfavorite,
 					action: () => this.toggleFavorite(false)
 				} : {
 					icon: faStar,
-					text: this.$t('favorite'),
+					text: this.$ts.favorite,
 					action: () => this.toggleFavorite(true)
 				}),
 				{
 					icon: faPaperclip,
-					text: this.$t('clip'),
+					text: this.$ts.clip,
 					action: () => this.clip()
 				},
-				(this.appearNote.userId != this.$store.state.i.id) ? statePromise.then(state => state.isWatching ? {
+				(this.appearNote.userId != this.$i.id) ? statePromise.then(state => state.isWatching ? {
 					icon: faEyeSlash,
-					text: this.$t('unwatch'),
+					text: this.$ts.unwatch,
 					action: () => this.toggleWatch(false)
 				} : {
 					icon: faEye,
-					text: this.$t('watch'),
+					text: this.$ts.watch,
 					action: () => this.toggleWatch(true)
 				}) : undefined,
-				this.appearNote.userId == this.$store.state.i.id ? (this.$store.state.i.pinnedNoteIds || []).includes(this.appearNote.id) ? {
+				this.appearNote.userId == this.$i.id ? (this.$i.pinnedNoteIds || []).includes(this.appearNote.id) ? {
 					icon: faThumbtack,
-					text: this.$t('unpin'),
+					text: this.$ts.unpin,
 					action: () => this.togglePin(false)
 				} : {
 					icon: faThumbtack,
-					text: this.$t('pin'),
+					text: this.$ts.pin,
 					action: () => this.togglePin(true)
 				} : undefined,
-				...(this.$store.state.i.isModerator || this.$store.state.i.isAdmin ? [
+				...(this.$i.isModerator || this.$i.isAdmin ? [
 					null,
 					{
 						icon: faBullhorn,
-						text: this.$t('promote'),
+						text: this.$ts.promote,
 						action: this.promote
 					}]
 					: []
@@ -813,16 +770,16 @@ export default defineComponent({
 					null,
 					{
 						icon: faMehRollingEyes,
-						text: this.$t('steal'),
+						text: this.$ts.steal,
 						action: this.steal
 					}]
 					: []
 				),
-				...(this.appearNote.userId != this.$store.state.i.id ? [
+				...(this.appearNote.userId != this.$i.id ? [
 					null,
 					{
 						icon: faExclamationCircle,
-						text: this.$t('reportAbuse'),
+						text: this.$ts.reportAbuse,
 						action: () => {
 							const u = `${url}/notes/${this.appearNote.id}`;
 							os.popup(import('@/components/abuse-report-window.vue'), {
@@ -838,16 +795,16 @@ export default defineComponent({
 					text: this.$t(this.isPlainMode ? 'showAsMfm' : 'showAsPlainText'),
 					action: () => this.isPlainMode = !this.isPlainMode,
 				},
-				...(this.appearNote.userId == this.$store.state.i.id || this.$store.state.i.isModerator || this.$store.state.i.isAdmin ? [
+				...(this.appearNote.userId == this.$i.id || this.$i.isModerator || this.$i.isAdmin ? [
 					null,
-					this.appearNote.userId == this.$store.state.i.id ? {
+					this.appearNote.userId == this.$i.id ? {
 						icon: faEdit,
-						text: this.$t('deleteAndEdit'),
+						text: this.$ts.deleteAndEdit,
 						action: this.delEdit
 					} : undefined,
 					{
 						icon: faTrashAlt,
-						text: this.$t('delete'),
+						text: this.$ts.delete,
 						danger: true,
 						action: this.del
 					}]
@@ -857,15 +814,15 @@ export default defineComponent({
 			} else {
 				menu = [{
 					icon: faCopy,
-					text: this.$t('copyContent'),
+					text: this.$ts.copyContent,
 					action: this.copyContent
 				}, {
 					icon: faLink,
-					text: this.$t('copyLink'),
+					text: this.$ts.copyLink,
 					action: this.copyLink
 				}, (this.appearNote.url || this.appearNote.uri) ? {
 					icon: faExternalLinkSquareAlt,
-					text: this.$t('showOnRemote'),
+					text: this.$ts.showOnRemote,
 					action: () => {
 						window.open(this.appearNote.url || this.appearNote.uri, '_blank');
 					}
@@ -908,13 +865,13 @@ export default defineComponent({
 		showRenoteMenu(viaKeyboard = false) {
 			if (!this.isMyRenote) return;
 			os.modalMenu([{
-				text: this.$t('unrenote'),
+				text: this.$ts.unrenote,
 				icon: faTrashAlt,
 				danger: true,
 				action: async () => {
-					const canceled = this.$store.state.device.showUnrenoteConfirm && (await os.dialog({
+					const canceled = this.$store.state.showUnrenoteConfirm && (await os.dialog({
 						type: 'warning',
-						text: this.$t('unrenoteConfirm'),
+						text: this.$ts.unrenoteConfirm,
 						showCancelButton: true
 					})).canceled;
 					if (canceled) return;
@@ -949,7 +906,7 @@ export default defineComponent({
 				if (e.id === '72dab508-c64d-498f-8740-a8eec1ba385a') {
 					os.dialog({
 						type: 'error',
-						text: this.$t('pinLimitExceeded')
+						text: this.$ts.pinLimitExceeded
 					});
 				}
 			});
@@ -959,22 +916,22 @@ export default defineComponent({
 			const clips = await os.api('clips/list');
 			os.modalMenu([{
 				icon: faPlus,
-				text: this.$t('createNew'),
+				text: this.$ts.createNew,
 				action: async () => {
-					const { canceled, result } = await os.form(this.$t('createNewClip'), {
+					const { canceled, result } = await os.form(this.$ts.createNewClip, {
 						name: {
 							type: 'string',
-							label: this.$t('name')
+							label: this.$ts.name
 						},
 						description: {
 							type: 'string',
 							required: false,
 							multiline: true,
-							label: this.$t('description')
+							label: this.$ts.description
 						},
 						isPublic: {
 							type: 'boolean',
-							label: this.$t('public'),
+							label: this.$ts.public,
 							default: false
 						}
 					});
@@ -995,7 +952,7 @@ export default defineComponent({
 
 		async promote() {
 			const { canceled, result: days } = await os.dialog({
-				title: this.$t('numberOfDays'),
+				title: this.$ts.numberOfDays,
 				input: { type: 'number' }
 			});
 
@@ -1010,17 +967,17 @@ export default defineComponent({
 		async steal() {
 			if (!this.appearNote.text) return;
 
-			const canceled = this.$store.state.device.showStealConfirm && (await os.dialog({
+			const canceled = this.$store.state.showStealConfirm && (await os.dialog({
 				type: 'question',
-				text: this.$t('stealConfirm'),
+				text: this.$ts.stealConfirm,
 				showCancelButton: true
 			})).canceled;
 			if (canceled) return;
 
-			const rule = this.$store.state.settings.stealRule;
+			const rule = this.$store.state.stealRule;
 
 			if (rule === 1) {
-				this.reactDirectly(this.$store.state.settings.stealReaction);
+				this.reactDirectly(this.$store.state.stealReaction);
 			}
 			if (rule === 2) {
 				this.renoteDirectly();
@@ -1064,94 +1021,13 @@ export default defineComponent({
 	overflow: hidden;
 	contain: content;
 
-	&.compact {
-		padding: 8px;
-		> .renote, > .article, > .info {
-			padding: 0;
-			> .avatar {
-				width: 2.5em;
-				height: 2.5em;
-			}
-		}
-
-		> .renote {
-			margin-left: 2.5em;
-		}
-
-		.article {
-			.main {
-				.footer > .button {
-					padding: 0 8px;
-				}
-			}
-		}
-
-		> .renote > .avatar {
-			width: 1.5em;
-			height: 1.5em;
-		}
-		
-		> .info, > .renote {
-			+ .article {
-				padding-top: 0;
-			}
-		}
-	}
-
-	&.max-width_500px {
-		font-size: 0.9em;
-	}
-
-	&:not(.compact).max-width_450px {
-		> .renote {
-			padding: 8px 16px 0 16px;
-		}
-
-		> .article {
-			padding: 14px 16px 9px;
-
-			> .avatar {
-				margin: 0 10px 8px 0;
-				width: 50px;
-				height: 50px;
-			}
-		}
-	}
-
-	&.max-width_350px {
-		> .article {
-			> .main {
-				> .footer {
-					> .button {
-						&:not(:last-child) {
-							margin-right: 18px;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	&:not(.compact).max-width_300px {
-		font-size: 0.825em;
-
-		> .article {
-			> .avatar {
-				width: 44px;
-				height: 44px;
-			}
-
-			> .main {
-				> .footer {
-					> .button {
-						&:not(:last-child) {
-							margin-right: 12px;
-						}
-					}
-				}
-			}
-		}
-	}
+	// これらの指定はパフォーマンス向上には有効だが、ノートの高さは一定でないため、
+	// 下の方までスクロールすると上のノートの高さがここで決め打ちされたものに変化し、表示しているノートの位置が変わってしまう
+	// ノートがマウントされたときに自身の高さを取得し contain-intrinsic-size を設定しなおせばほぼ解決できそうだが、
+	// 今度はその処理自体がパフォーマンス低下の原因にならないか懸念される。また、被リアクションでも高さは変化するため、やはり多少のズレは生じる
+	// 一度レンダリングされた要素はブラウザがよしなにサイズを覚えておいてくれるような実装になるまで待った方が良さそう(なるのか？)
+	//content-visibility: auto;
+  //contain-intrinsic-size: 0 128px;
 
 	&:focus {
 		outline: none;
@@ -1205,10 +1081,6 @@ export default defineComponent({
 	> .reply-to {
 		opacity: 0.7;
 		padding-bottom: 0;
-	}
-
-	> .reply-to-more {
-		opacity: 0.7;
 	}
 
 	> .renote {
@@ -1338,13 +1210,43 @@ export default defineComponent({
 				}
 
 				> .content {
+					&.collapsed {
+						position: relative;
+						max-height: 9em;
+						overflow: hidden;
+
+						> .fade {
+							display: block;
+							position: absolute;
+							bottom: 0;
+							left: 0;
+							width: 100%;
+							height: 64px;
+							background: linear-gradient(0deg, var(--panel), var(--X15));
+
+							> span {
+								display: inline-block;
+								background: var(--panel);
+								padding: 6px 10px;
+								font-size: 0.8em;
+								border-radius: 999px;
+								box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+							}
+
+							&:hover {
+								> span {
+									background: var(--panelHighlight);
+								}
+							}
+						}
+					}
+
 					> .text {
 						overflow-wrap: break-word;
 
 						&.collapse {
 							display: block;
 							overflow: hidden;
-							height: 192px;
 							position: relative;
 							&::after {
 								content: '';

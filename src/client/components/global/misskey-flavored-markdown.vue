@@ -1,5 +1,5 @@
 <template>
-	<MfmCore v-bind="$attrs" class="havbbuyv" :class="{ nowrap: $attrs['nowrap'], sticker: !$attrs['plain'] && !$attrs['no-sticker'] && $store.state.device.useSticker }"/>
+	<MfmCore v-bind="$attrs" :nowrap="nowrap" :plain="plain" class="havbbuyv" :class="{ nowrap: nowrap, sticker: !plain && !noSticker && $store.state.useSticker }"/>
 </template>
 
 <script lang="ts">
@@ -14,11 +14,32 @@ export default defineComponent({
 		once: {
 			default: true,
 		},
+		nowrap: {
+			type: Boolean,
+			default: false,
+		},
+		plain: {
+			type: Boolean,
+			default: false,
+		},
+		noSticker: {
+			type: Boolean,
+			default: false,
+		},
 	}
 });
 </script>
 
 <style lang="scss">
+._mfm_blur_ {
+	filter: blur(6px);
+	transition: filter 0.3s;
+
+	&:hover {
+		filter: blur(0px);
+	}
+}
+
 @keyframes mfm-spin {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }

@@ -1,10 +1,10 @@
 <template>
 <div class="mk-home" v-hotkey.global="keymap">
-	<div class="new" v-if="queue > 0" :style="{ width: width + 'px' }"><button class="_buttonPrimary" @click="top()">{{ $t('newNoteRecived') }}</button></div>
+	<div class="new" v-if="queue > 0" :style="{ width: width + 'px' }"><button class="_buttonPrimary" @click="top()">{{ $ts.newNoteRecived }}</button></div>
 
 	<div class="_section">
-		<XTutorial v-if="$store.state.settings.tutorial != -1" class="tutorial _content _vMargin"/>
-		<XPostForm v-if="$store.state.device.showFixedPostForm" class="post-form _panel _content _vMargin" fixed/>
+		<XTutorial v-if="$store.reactiveState.tutorial.value != -1" class="tutorial _content _vMargin"/>
+		<XPostForm v-if="$store.reactiveState.showFixedPostForm.value" class="post-form _panel _content _vMargin" fixed/>
 		<XTimeline ref="tl"
 			class="_content _vMargin"
 			:key="src === 'list' ? `list:${list.id}` : src === 'antenna' ? `antenna:${antenna.id}` : src === 'channel' ? `channel:${channel.id}` : src"
@@ -31,16 +31,13 @@ import XPostForm from '@/components/post-form.vue';
 import { scroll } from '@/scripts/scroll';
 import * as os from '@/os';
 import { timelineMenuItems, timelineMenuMap } from '../menus/timeline';
-
 export default defineComponent({
 	name: 'timeline',
-
 	components: {
 		XTimeline,
 		XTutorial: defineAsyncComponent(() => import('./timeline.tutorial.vue')),
 		XPostForm,
 	},
-
 	data() {
 		return {
 			src: 'home',
@@ -63,8 +60,7 @@ export default defineComponent({
 					indicate?: ComputedRef<boolean> | boolean,
 				};
 				const tabs: Tab[] = [];
-
-				for (const item of (this.$store.state.device.timelineTabItems as []).map(src => timelineMenuItems.find(it => it.src === src))) {
+				for (const item of (this.$store.state.timelineTabItems as []).map(src => timelineMenuItems.find(it => it.src === src))) {
 					if (!item) continue;
 					if (item.show && !item.show()) continue;
 					tabs.push({
@@ -76,8 +72,7 @@ export default defineComponent({
 						selected: computed(() => this.src === item.src),
 					});
 				}
-
-				if (!this.$store.state.device.timelineTabItems.includes(this.src)) {
+				if (!this.$store.state.timelineTabItems.includes(this.src)) {
 					tabs.push({
 						id: this.src,
 						title: null,
@@ -85,15 +80,13 @@ export default defineComponent({
 						selected: true,
 					});
 				}
-
 				tabs.push({
 					id: 'other',
 					title: null,
 					icon: faEllipsisH,
 					onClick: this.choose,
-					indicate: computed(() => this.$store.state.i.hasUnreadAntenna || this.$store.state.i.hasUnreadChannel)
+					indicate: computed(() => this.$i.hasUnreadAntenna || this.$i.hasUnreadChannel)
 				});
-
 				if (this.announcements.length > 0) {
 					tabs.push({
 						id: 'announcements',
@@ -110,7 +103,6 @@ export default defineComponent({
 										return newA;
 									});
 									this.hasUnreadAnnouncements = this.announcements.some(a => !a.isRead);
-
 									os.api('i/read-announcement', { announcementId: ann.id })
 								},
 							}, 'closed');
@@ -118,7 +110,7 @@ export default defineComponent({
 						indicate: computed(() => this.hasUnreadAnnouncements)
 					});
 				};
-
+				console.log(tabs);
 				return {
 					tabs,
 					action: {
@@ -130,19 +122,16 @@ export default defineComponent({
 			faAngleDown, faAngleUp, faHome, faShareAlt, faGlobe, faComments, faListUl, faSatellite, faSatelliteDish, faCircle
 		};
 	},
-
 	computed: {
 		keymap(): any {
 			return {
 				't': this.focus
 			};
 		},
-
 		meta() {
-			return this.$store.state.instance.meta;
+			return this.$instance;
 		},
 	},
-
 	watch: {
 		src() {
 			this.showNav = false;
@@ -163,50 +152,41 @@ export default defineComponent({
 			if (x != null) this.list = null;
 		},
 	},
-
 	created() {
-		this.src = this.$store.state.deviceUser.tl.src;
+		this.src = this.$store.state.tl.src;
 		if (this.src === 'list') {
-			this.list = this.$store.state.deviceUser.tl.arg;
+			this.list = this.$store.state.tl.arg;
 		} else if (this.src === 'antenna') {
-			this.antenna = this.$store.state.deviceUser.tl.arg;
+			this.antenna = this.$store.state.tl.arg;
 		} else if (this.src === 'channel') {
-			this.channel = this.$store.state.deviceUser.tl.arg;
+			this.channel = this.$store.state.tl.arg;
 		}
 	},
-
 	mounted() {
 		this.width = this.$el.offsetWidth;
 	},
-
 	async activated() {
 		this.announcements = (await os.api('announcements', {
 			limit: 100,
 		}));
 		this.hasUnreadAnnouncements = this.announcements.some(a => !a.isRead);
 	},
-
 	methods: {
 		before() {
 			Progress.start();
 		},
-
 		after() {
 			Progress.done();
 		},
-
 		queueUpdated(q) {
 			if (this.$el.offsetWidth !== 0) this.width = this.$el.offsetWidth;
 			this.queue = q;
 		},
-
 		top() {
 			scroll(this.$el, 0);
 		},
-
 		async choose(ev) {
 			if (this.meta == null) return;
-
 			const antennaPromise = os.api('antennas/list').then((antennas: any[]) => antennas.length === 0 ? [] : [null, ...antennas.map(antenna => ({
 				text: antenna.name,
 				icon: faSatellite,
@@ -238,16 +218,13 @@ export default defineComponent({
 					this.$router.push(`/channels/${channel.id}`);
 				}
 			}))]);
-
 			const timelines = timelineMenuItems
-				.filter(it => !(this.$store.state.device.timelineTabItems as string[]).includes(it.src))
+				.filter(it => !(this.$store.state.timelineTabItems as string[]).includes(it.src))
 				.map(it => ({
 					text: it.name,
 					icon: it.icon,
 					action: () => { this.src = it.src; this.saveSrc(); },
 				}));
-
-
 			os.modalMenu([
 				timelines,
 				antennaPromise,
@@ -255,9 +232,8 @@ export default defineComponent({
 				channelPromise,
 				], ev.currentTarget || ev.target);
 		},
-
 		saveSrc() {
-			this.$store.commit('deviceUser/setTl', {
+			this.$store.set('tl', {
 				src: this.src,
 				arg:
 					this.src === 'list' ? this.list :
@@ -265,7 +241,6 @@ export default defineComponent({
 					this.channel
 			});
 		},
-
 		focus() {
 			(this.$refs.tl as any).focus();
 		}
@@ -278,7 +253,6 @@ export default defineComponent({
 	> .new {
 		position: fixed;
 		z-index: 1000;
-
 		> button {
 			display: block;
 			margin: var(--margin) auto 0 auto;
@@ -286,9 +260,7 @@ export default defineComponent({
 			border-radius: 32px;
 		}
 	}
-
 	> ._section {
-
 	}
 }
 </style>
