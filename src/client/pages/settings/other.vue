@@ -1,5 +1,7 @@
 <template>
 <FormBase>
+	<FormSwitch v-model:value="reportError">{{ $ts.sendErrorReports }}<template #desc>{{ $ts.sendErrorReportsDescription }}</template></FormSwitch>
+
 	<FormLink to="/settings/account-info">{{ $ts.accountInfo }}</FormLink>
 	<FormLink to="/settings/labs">Groundpolis {{ $ts._labs.title }}</FormLink>
 
@@ -8,7 +10,6 @@
 		<FormSwitch v-model:value="debug" @update:value="changeDebug">
 			DEBUG MODE
 		</FormSwitch>
-		<FormLink to="/settings/regedit">RegEdit</FormLink>
 		<FormButton @click="taskmanager">Task Manager</FormButton>
 	</FormGroup>
 
@@ -26,17 +27,21 @@
 		</FormButton>
 	</FormGroup>
 
+	<FormLink to="/settings/registry"><template #icon><Fa :icon="faCogs"/></template>{{ $ts.registry }}</FormLink>
+
 	<FormGroup>
 		<template #label>{{ $ts.dangerousSettings }}</template>
 		<FormButton danger @click="discardPostFormDraft"><Fa :icon="faTrashAlt"/> {{ $ts.discardPostFormDraft }}</FormButton>
 		<template #caption>{{ $ts.discardPostFormDraftDescription }}</template>
 	</FormGroup>
+	<FormButton @click="closeAccount" danger>{{ $ts.closeAccount }}</FormButton>
+
 </FormBase>
 </template>
 
 <script lang="ts">
-import { defineAsyncComponent, defineComponent } from 'vue';
-import { faEllipsisH, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { defineComponent } from 'vue';
+import { faTrashAlt, faCogs } from '@fortawesome/free-solid-svg-icons';
 import FormSwitch from '@/components/form/switch.vue';
 import FormSelect from '@/components/form/select.vue';
 import FormLink from '@/components/form/link.vue';
@@ -46,6 +51,7 @@ import FormButton from '@/components/form/button.vue';
 import * as os from '@/os';
 import { debug } from '@/config';
 import { defaultStore } from '@/store';
+import { signout } from '@/account';
 
 export default defineComponent({
 	components: {
@@ -59,13 +65,14 @@ export default defineComponent({
 
 	data() {
 		return {
-			debug,
+			debug, faTrashAlt, faCogs
 		}
 	},
 
 	computed: {
 		stealRule: defaultStore.makeGetterSetter('stealRule'),
 		stealReaction: defaultStore.makeGetterSetter('stealReaction'),
+		reportError: defaultStore.makeGetterSetter('reportError'),
 	},
 
 	methods: {
@@ -91,8 +98,31 @@ export default defineComponent({
 		},
 		
 		discardPostFormDraft() {
-			localStorage.removeItem('drafts');
+			os.dialog({
+				text: this.$ts.discardPostFormDraftConfirm,
+				showCancelButton: true,
+			}).then(({ canceled }) => {
+				if (canceled) return;
+				localStorage.removeItem('drafts');
+			});
 		},
+
+		closeAccount() {
+			os.dialog({
+				title: this.$ts.closeAccountConfirm,
+				text: this.$ts.closeAccountConfirmDesc,
+				input: {
+					type: 'password'
+				}
+			}).then(({ canceled, result: password }) => {
+				if (canceled) return;
+				os.api('i/delete-account', {
+					password: password
+				}).then(() => {
+					signout();
+				});
+			});
+		}
 	}
 });
 </script>

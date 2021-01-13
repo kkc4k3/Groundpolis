@@ -197,6 +197,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: true
 	},
+	reportError: {
+		where: 'device',
+		default: false
+	},
 
 	//#region Groundpolis
 
@@ -322,7 +326,7 @@ type Plugin = {
  */
 export class ColdDeviceStorage {
 	public static default = {
-		themes: [] as Theme[],
+		themes: [] as Theme[], // TODO: そのうち消す
 		darkTheme: '8050783a-7f63-445a-b270-36d0f6ba1677',
 		lightTheme: '4eea646f-7afa-4645-83e9-83af0333cd37',
 		syncDeviceDarkMode: true,

@@ -14,7 +14,6 @@
 			<button class="_button function" @click="insertFunction" v-tooltip="$ts._mfmpad.functions"><code style="font-weight: bold">[]</code></button>
 			<button class="_button" @click="insertMention" v-tooltip="$ts.mention"><Fa :icon="faAt"/></button>
 			<button class="_button" @click="insertEmoji" v-tooltip="$ts.emoji"><Fa :icon="faLaughSquint"/></button>
-			<!-- <button class="_button" @click="mfmPadMenu" v-tooltip="$ts._mfmPad.more"><Fa :icon="faEllipsisV"/></button> -->
 			<div class="divider"></div>
 			<button class="_button help" v-tooltip="$ts.help" @click="help">
 				<Fa :icon="faQuestionCircle" />
@@ -46,21 +45,21 @@
 			</div>
 		</div>
 		<input v-show="useCw" ref="cw" class="cw" v-model="cw" :placeholder="$ts.annotation" @keydown="onKeydown">
-		<textarea v-model="text" class="text" :class="{ withCw: useCw }" ref="text" :disabled="posting" :placeholder="placeholder" @keydown="onKeydown" @paste="onPaste"></textarea>
+		<textarea v-model="text" class="text" :class="{ withCw: useCw }" ref="text" :disabled="posting" :placeholder="placeholder" @keydown="onKeydown" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd" />
 		<input v-show="useBroadcast" ref="broadcastText" class="broadcastText" v-model="broadcastText" :placeholder="$ts.broadcastTextDescription" @keydown="onKeydown">
 		<XPostFormAttaches class="attaches" :files="files" @updated="updateFiles" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 		<XPollEditor v-if="poll" :poll="poll" @destroyed="poll = null" @updated="onPollUpdate"/>
 		<footer>
-			<button v-if="currentAccount" class="_button switch-user" @click="switchUser" v-tooltip="$ts.switchUser">
-				<MkAvatar class="avatar" :user="currentAccount" disable-link disable-preview />
-			</button>
-			<button v-if="currentAccountIsMyself" class="_button" @click="chooseFileFrom" v-tooltip="$ts.attachFile"><Fa :icon="faPhotoVideo"/></button>
+			<button :disabled="!currentAccountIsMyself" class="_button" @click="chooseFileFrom" v-tooltip="$ts.attachFile"><Fa :icon="faPhotoVideo"/></button>
 			<button class="_button" @click="togglePoll" :class="{ active: poll }" v-tooltip="$ts.poll"><Fa :icon="faPollH"/></button>
 			<button class="_button" @click="useCw = !useCw" :class="{ active: useCw }" v-tooltip="$ts.useCw"><Fa :icon="faEyeSlash"/></button>
 			<button class="_button" @click="useBroadcast = !useBroadcast" :class="{ active: useBroadcast }" v-tooltip="$ts.broadcastMode"><Fa :icon="faBullhorn"/></button>
 			<button class="_button" @click="insertFace" v-tooltip="$ts.gacha"><Fa :icon="faFish"/></button>
+			<button v-if="currentAccount && accounts.length > 1" class="_button switch-user" @click="switchUser" v-tooltip="$ts.switchUser">
+				<MkAvatar class="avatar" :user="currentAccount" disable-link disable-preview />
+			</button>
 			<button class="_button" @click="showActions" v-tooltip="$ts.plugin" v-if="postFormActions.length > 0"><Fa :icon="faPlug"/></button>
-			<span class="text-count" :class="{ over: trimmedLength(text) > max }">{{ max - trimmedLength(text) }}</span>
+			<span class="text-count" :class="{ over: textLength > max }">{{ max - textLength }}</span>
 			<button class="submit _buttonPrimary" :disabled="!canPost" @click="post">
 				<Fa :icon="faPaperPlane" />
 			</button>
@@ -170,6 +169,7 @@ export default defineComponent({
 			draghover: false,
 			quote: null as Record<string, unknown> | null,
 			recentHashtags: JSON.parse(localStorage.getItem('hashtags') || '[]'),
+			imeText: '',
 			postFormActions,
 			faReply, faQuoteRight, faPaperPlane, faTimes, faUpload, faPollH, faGlobe, faHome, faUnlock, faEnvelope, faEyeSlash, faLaughSquint, faPlus, faPhotoVideo, faCloud, faLink, faAt, faHeart, faUsers, faFish, faHeartbeat, faQuestionCircle, faBullhorn, faPlug, faChevronDown, faEllipsisV
 		};
@@ -218,10 +218,14 @@ export default defineComponent({
 					: this.$ts.note;
 		},
 
+		textLength(): number {
+			return length((this.text + this.imeText).trim());
+		},
+
 		canPost(): boolean {
 			return !this.posting &&
-				(1 <= this.text.length || 1 <= this.files.length || !!this.poll || !!this.quote) &&
-				(length(this.text.trim()) <= this.max) &&
+				(1 <= this.textLength || 1 <= this.files.length || !!this.poll || !!this.quote) &&
+				(this.textLength <= this.max) &&
 				(!this.poll || this.poll.choices.length >= 2);
 		},
 
@@ -324,7 +328,7 @@ export default defineComponent({
 		}
 
 		// keep cw when reply
-		if (this.$store.keepCw && this.reply && this.reply.cw) {
+		if (this.$store.state.keepCw && this.reply && this.reply.cw) {
 			this.useCw = true;
 			this.cw = this.reply.cw;
 		}
@@ -420,10 +424,6 @@ export default defineComponent({
 					expiredAfter: null,
 				};
 			}
-		},
-
-		trimmedLength(text: string) {
-			return length(text.trim());
 		},
 
 		addTag(tag: string) {
@@ -526,9 +526,17 @@ export default defineComponent({
 			this.$router.push('/docs/post')
 		},
 
-		onKeydown(e) {
+		onKeydown(e: KeyboardEvent) {
 			if ((e.which === 10 || e.which === 13) && (e.ctrlKey || e.metaKey) && this.canPost) this.post();
 			if (e.which === 27) this.$emit('esc');
+		},
+
+		onCompositionUpdate(e: CompositionEvent) {
+			this.imeText = e.data;
+		},
+
+		onCompositionEnd(e: CompositionEvent) {
+			this.imeText = '';
 		},
 
 		async onPaste(e: ClipboardEvent) {

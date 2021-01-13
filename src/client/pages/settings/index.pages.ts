@@ -9,11 +9,10 @@ import { i18n } from '@/i18n';
 
 export type PageDefinition = {
 	component: () => Component,
-	name: string,
 	type: 'basic' | 'client' | 'other' | 'hidden',
 	title?: string,
 	icon?: IconProp,
-};
+} & ({ name: string } | {pattern: RegExp});
 
 const ts = i18n.locale;
 export const pages: PageDefinition[] = [
@@ -197,12 +196,6 @@ export const pages: PageDefinition[] = [
 		icon: faColumns,
 		component: () => defineAsyncComponent(() => import('./deck.vue')),
 	},
-	// {
-	// 	name: 'regedit',
-	// 	type: 'hidden',
-	// 	title: 'Registry Editor',
-	// 	component: () => defineAsyncComponent(() => import('../regedit.vue')),
-	// },
 	{
 		name: 'apps',
 		type: 'hidden',
@@ -217,4 +210,32 @@ export const pages: PageDefinition[] = [
 		icon: faCss3Alt,
 		component: () => defineAsyncComponent(() => import('./labs.custom-css.vue')),
 	},
+	{
+		name: 'registry',
+		type: 'hidden',
+		title: ts.registry,
+		icon: faCogs,
+		component: () => defineAsyncComponent(() => import('./registry.vue')),
+	},
+	{
+		pattern: /^registry\/keys\/system\//,
+		type: 'hidden',
+		title: ts.registry,
+		icon: faCogs,
+		component: () => defineAsyncComponent(() => import('./registry.keys.vue'))
+	},
+	{
+		pattern: /^registry\/value\/system\//,
+		type: 'hidden',
+		title: ts.registry,
+		icon: faCogs,
+		component: () => defineAsyncComponent(() => import('./registry.value.vue'))
+	},
+	{
+		name: 'experimental-features',
+		type: 'hidden',
+		title: ts.experimentalFeatures,
+		icon: faFlask,
+		component: () => defineAsyncComponent(() => import('./experimental-features.vue'))
+	}
 ];

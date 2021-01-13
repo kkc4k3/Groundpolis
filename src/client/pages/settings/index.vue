@@ -28,7 +28,7 @@
 		</FormGroup>
 	</FormBase>
 	<div class="main">
-		<component :is="component"/>
+		<component :is="component" :key="page" @info="onInfo" v-bind="pageProps"/>
 	</div>
 </div>
 </template>
@@ -63,7 +63,15 @@ export default defineComponent({
 	},
 
 	setup(props, context) {
-		const page = computed(() => pages.find(p => p.name === props.page));
+		const page = computed(
+			() => pages.find(
+				p => (props.page) && (
+					(p as any).name
+						? p.name === props.page
+						: (p.pattern as RegExp).test(props.page)
+				)
+			)
+		);
 
 		const INFO = computed(() => page.value ? {
 			title: page.value.title,
@@ -77,15 +85,33 @@ export default defineComponent({
 		const view = ref(null);
 		const el = ref(null);
 
+		const onInfo = (viewInfo) => {
+			INFO.value = viewInfo;
+		};
+		const pageProps = ref({});
+
 		const component = computed(() => {
 			return page.value ? page.value.component() : null;
 		});
 
 		watch(component, () => {
+			pageProps.value = {};
+
+			if (props.page) {
+				if (props.page.startsWith('registry/keys/system/')) {
+					pageProps.value.scope = props.page.replace('registry/keys/system/', '').split('/');
+				}
+				if (props.page.startsWith('registry/value/system/')) {
+					const path = props.page.replace('registry/value/system/', '').split('/');
+					pageProps.value.xKey = path.pop();
+					pageProps.value.scope = path;
+				}
+			}
+
 			nextTick(() => {
 				scroll(el.value, 0);
 			});
-		});
+		}, { immediate: true });
 
 		onMounted(() => {
 			narrow.value = el.value.offsetWidth < 1025;
@@ -110,6 +136,8 @@ export default defineComponent({
 			basicPages: pages.filter(p => p.type === 'basic'),
 			clientPages: pages.filter(p => p.type === 'client'),
 			otherPages: pages.filter(p => p.type === 'other'),
+			onInfo,
+			pageProps,
 			component,
 			logout: () => {
 				signout();
