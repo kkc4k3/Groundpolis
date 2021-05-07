@@ -1,33 +1,55 @@
 <template>
-	<div class="v93n3na0">
-		<section class="_section">
-			<div class="_content">
-				<div class="preview">
-					<MkButton inline @click="selectFile">{{ $ts.selectFile }}</MkButton>
-					<img v-if="file" :src="file.url" :alt="file.name" />
-				</div>
-				<MkInput v-model:value="name"><span>{{ $ts.name }}</span></MkInput>
-				<MkInput v-model:value="aliases">
+	<div>
+		<MkTab v-model:value="tab" style="border-bottom: solid 1px var(--divider);">
+			<option value="form">
+				{{ $ts.emojiSuggestion }}
+			</option>
+			<option value="history">
+				{{ $ts.history }}
+			</option>
+		</MkTab>
+		<div class="remaining">
+			<b v-text="$ts.suggestionRemaining"/>:
+			<MkEllipsis v-if="remaining === undefined" />
+			<span v-else v-text="remaining === null ? '∞' : remaining"/>
+		</div>
+		<FormBase v-if="tab === 'form'">
+			<div v-if="file" class="_formItem preview">
+				<img class="preview" :src="file.url" :alt="file.name" />
+			</div>
+			<div v-else class="_formItem placeholder" />
+			<FormButton primary @click="selectFile">{{ $ts.selectFile }}</FormButton>
+			<MkInfo warn v-if="isWrongName">
+				{{$ts.suggestionEmojiWarnNameMalform}}
+			</MkInfo>
+			<MkInfo warn v-if="isWrongFileSize">
+				{{$ts.suggestionEmojiWarnFileSize}}
+			</MkInfo>
+			<MkInfo warn v-if="isWrongFileFormat">
+				{{$ts.suggestionEmojiWarnFileType}}
+			</MkInfo>
+			<template v-if="file">
+				<FormInput v-model:value="name"><span>{{ $ts.name }}</span></FormInput>
+				<FormInput v-model:value="aliases">
 					<span>{{ $ts.tags }}</span>
 					<template #desc>{{ $ts.tagsDescription }}</template>
-				</MkInput>
-				<MkTextarea v-model:value="description" :use-autocomplete="true" :max="500">
+				</FormInput>
+				<FormTextarea v-model:value="description" :use-autocomplete="true" :max="500">
 					<span>{{ $ts.emojiSuggestionMessage }}</span>
 					<template #desc>{{ $ts.emojiSuggestionMessageDescription }}</template>
-				</MkTextarea>
-			</div>
-			<div class="_footer">
-				<MkButton inline primary :disabled="!canSend" @click="send"><fa :icon="faPaperPlane" fixed-width />{{ $ts.sendSuggestion }}</MkButton>
-			</div>
-		</section>
-		<section class="_section _vMargin">
-			<div class="_title"><fa :icon="faHistory"/> {{ $ts.history }}</div>
-			<div class="_content filter">
+				</FormTextarea>
+				<FormButton primary :disabled="!canSend" @click="send">
+					<fa :icon="faPaperPlane" fixed-width />{{ $ts.sendSuggestion }}
+				</FormButton>
+			</template>
+		</FormBase>
+		<section v-if="tab === 'history'">
+			<div class="_section _inputs filter">
 				<MkSwitch v-model:value="includesPending"><fa :icon="faClock" fixed-width />{{ $ts.pending }}</MkSwitch>
 				<MkSwitch v-model:value="includesRejected"><fa :icon="faTimesCircle" fixed-width />{{ $ts.rejected }}</MkSwitch>
 				<MkSwitch v-model:value="includesAccepted"><fa :icon="faCheckCircle" fixed-width />{{ $ts.accepted }}</MkSwitch>
 			</div>
-			<div class="_content">
+			<div class="_section">
 				<MkPagination :pagination="pagination" class="suggestions" ref="pagination">
 					<template #empty><span>{{ $ts.noSuggestions }}</span></template>
 					<template #default="{items}">
@@ -66,6 +88,12 @@ import MkInput from '../components/ui/input.vue';
 import MkTextarea from '../components/ui/textarea.vue';
 import MkSwitch from '../components/ui/switch.vue';
 import MkPagination from '../components/ui/pagination.vue';
+import MkTab from '../components/tab.vue';
+import MkInfo from '../components/ui/info.vue';
+import FormBase from '../components/form/base.vue';
+import FormButton from '../components/form/button.vue';
+import FormInput from '../components/form/input.vue';
+import FormTextarea from '../components/form/textarea.vue';
 import { PackedDriveFile } from '../../models/repositories/drive-file';
 import { selectFile } from '../scripts/select-file';
 import { PackedEmojiRequest } from '../../models/repositories/emoji-request';
@@ -77,7 +105,13 @@ export default defineComponent({
 		MkInput,
 		MkTextarea,
 		MkSwitch,
-		MkPagination
+		MkPagination,
+		MkTab,
+		MkInfo,
+		FormBase,
+		FormButton,
+		FormInput,
+		FormTextarea,
 	},
 	data() {
 			return {
@@ -91,6 +125,8 @@ export default defineComponent({
 				includesPending: true,
 				includesRejected: true,
 				includesAccepted: true,
+				remaining: undefined as (number | undefined),
+				tab: 'form',
 				file: null as PackedDriveFile | null,
 				pagination: {
 					endpoint: 'suggestions/emojis/list',
@@ -115,12 +151,24 @@ export default defineComponent({
 		},
 		canSend() {
 			return this.file && this.name && this.description;
-		}
+		},
+		isWrongName() {
+			return this.name && !(/^[a-z0-9_]+$/.test(this.name));
+		},
+		isWrongFileSize() {
+			return this.file && Math.round(this.file.size / 1024) > 50;
+		},
+		isWrongFileFormat() {
+			return this.file && this.file.type !== 'image/png' && this.file.type !== 'image/gif';
+		},
 	},
 	watch: {
 		includesPending() { this.$refs.pagination.reload(); },
 		includesAccepted() { this.$refs.pagination.reload(); },
 		includesRejected() { this.$refs.pagination.reload(); },
+	},
+	mounted() {
+		this.updateRemaining();
 	},
 	methods: {
 		getIconOf(state: string) {
@@ -131,6 +179,9 @@ export default defineComponent({
 				default: return null;
 			}
 		},
+		updateRemaining() {
+			os.api('suggestions/emojis/remaining', {}).then(({limit}) => this.remaining = limit);
+		},
 		async selectFile(e: any) {
 			this.file = await selectFile(e.currentTarget || e.target, null, false) as PackedDriveFile;
 			// 画像じゃなければエラー
@@ -140,6 +191,8 @@ export default defineComponent({
 					type: 'error',
 					text: this.$ts.theFileIsNotImage,
 				});
+			} else {
+				this.name = this.file.name ? this.file.name.replace(/\.[^/.]+$/, "") : '';
 			}
 		},
 		send() {
@@ -156,7 +209,7 @@ export default defineComponent({
 				});
 				this.name = this.aliases = this.description = '';
 				this.file = null;
-				this.$refs.pagination.reload();
+				this.updateRemaining();
 			}).catch(e => {
 				os.dialog({
 					type: 'error',
@@ -174,7 +227,7 @@ export default defineComponent({
 
 			try {
 				await os.api('suggestions/emojis/delete', { id });
-				this.$refs.pagination.reload();
+				this.updateRemaining();
 			} catch (e) {
 				os.dialog({
 					type: 'error',
@@ -187,87 +240,82 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.v93n3na0 {
-	.preview {
+.preview, .placeholder {
+	display: block;
+	margin: 0 auto;
+	height: 64px;
+}
+.placeholder {
+	width: 64px;
+	border: 1px solid var(--divider);
+}
+.remaining {
+	width: 100%;
+	text-align: center;
+	margin: 16px 0;
+}
+.suggestions {
+	width: 100%;
+	> .item {
 		display: flex;
-		> img {
-			height: 32px;
-			margin-left: 8px;
-		}
-	}
+		align-items: flex-start;
+		&.selected {
+			background: var(--accent);
+			box-shadow: 0 0 0 8px var(--accent);
+			color: #fff;
 
-	.filter {
-		display: flex;
-
-		> * {
-			margin: 0 16px;
-		}
-	}
-
-	.suggestions {
-		width: 100%;
-		height: 256px;
-		overflow: auto;
-		> .item {
-			display: flex;
-			align-items: flex-start;
-			&.selected {
-				background: var(--accent);
-				box-shadow: 0 0 0 8px var(--accent);
-				color: #fff;
-
-				> .delete {
-					color: #fff;
-				}
-			}
-			> .img {
-				width: 50px;
-				height: 50px;
-			}
-			> .body {
-				padding: 8px;
-				> .name {
-					display: block;
-					font-weight: bold;
-				}
-				> .aliases {
-					opacity: 0.5;
-					> .alias {
-						margin-right: 0.5em;
-					}
-				}
-				.description {
-					display: block;
-					margin: 8px;
-					padding: 6px 0 6px 12px;
-					color: var(--fg);
-					border-left: solid 3px var(--fg);
-					opacity: 0.7;
-				}
-				> .moderator-comment {
-					> h1 {
-						font-size: 1em;
-						margin: 0;
-					}
-				}
-			}
 			> .delete {
-				margin-left: auto;
-				border: none;
-				background: transparent;
-				color: var(--accent);
-				cursor: pointer;
-				height: 32px;
-				width: 32px;
-				outline: none;
-				
-				&:hover {
-					background: rgba(0, 0, 0, 0.05);
+				color: #fff;
+			}
+		}
+		> .img {
+			width: 64px;
+			height: 64px;
+			object-fit: contain;
+		}
+		> .body {
+			padding: 8px;
+			> .name {
+				display: block;
+				font-weight: bold;
+			}
+			> .aliases {
+				opacity: 0.5;
+				> .alias {
+					margin-right: 0.5em;
 				}
+			}
+			.description {
+				display: block;
+				margin: 8px;
+				padding: 6px 0 6px 12px;
+				color: var(--fg);
+				border-left: solid 3px var(--fg);
+				opacity: 0.7;
+			}
+			> .moderator-comment {
+				> h1 {
+					font-size: 1em;
+					margin: 0;
+				}
+			}
+		}
+		> .delete {
+			margin-left: auto;
+			border: none;
+			background: transparent;
+			color: var(--accent);
+			cursor: pointer;
+			height: 32px;
+			width: 32px;
+			outline: none;
+			
+			&:hover {
+				background: rgba(0, 0, 0, 0.05);
+			}
 
-				&:active {
-					background: rgba(0, 0, 0, 0.1);
-				}
+			&:active {
+				background: rgba(0, 0, 0, 0.1);
 			}
 		}
 	}
